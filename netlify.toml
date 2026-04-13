@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[dev]
+  command = "npm run dev"
+  targetPort = 5000   # 告诉 Netlify 你的服务器在 5000 端口
+  port = 8888         # Netlify Dev 代理后的外部访问端口
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
