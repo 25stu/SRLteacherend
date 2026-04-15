@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -184,6 +184,41 @@ export default function TeacherPage() {
     setIsBatchAnalyzing(false);
   };
 
+  const loadAnalyzeCaches = async () => {
+    try {
+      const response = await fetch('/api/analyze?action=getAllData');
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      if (data.reports) setReportsCache(data.reports);
+      if (data.summaries) setClassSummaryCache(data.summaries);
+
+      return {
+        reports: data.reports || {},
+        summaries: data.summaries || {},
+      };
+    } catch (e) {
+      console.warn('Failed to load server caches', e);
+      return null;
+    }
+  };
+
+  const loadReportForConversation = async (conversationId: string) => {
+    try {
+      const response = await fetch(`/api/analyze?action=getReport&conversationId=${encodeURIComponent(conversationId)}`);
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      if (data.report) {
+        saveReportToCache(conversationId, data.report);
+        return data.report as AnalysisReport;
+      }
+    } catch (e) {
+      console.warn('Failed to load report from server', e);
+    }
+
+    return null;
+  };
   // 从服务端加载初始数据
   useEffect(() => {
     // 1. 加载智能体配置
@@ -218,7 +253,7 @@ export default function TeacherPage() {
     };
 
     loadAgents();
-    loadCaches();
+    loadAnalyzeCaches();
   }, []);
 
   // 保存报告到缓存 (仅更新本地状态，服务端在API调用时已保存)
@@ -1584,3 +1619,4 @@ ${report.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}
     </div>
   );
 }
+
