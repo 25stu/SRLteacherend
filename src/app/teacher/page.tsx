@@ -108,7 +108,8 @@ export default function TeacherPage() {
     setBatchProgress({ current: 0, total: targets.length, studentName: '初始化...' });
 
     // 定义并发池（控制同时进行的分析数量，避免 Dify API 超限）
-    const CONCURRENCY_LIMIT = 3;
+    // 为了数据一致性（防止多个并发请求同时修改 master blob 造成覆盖），设置并发为 1
+    const CONCURRENCY_LIMIT = 1;
     const pool = [...targets];
 
     const worker = async () => {

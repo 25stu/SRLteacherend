@@ -14,67 +14,66 @@ function getSummariesStore() {
   return getStore('class-summaries');
 }
 
+async function getReportsData(): Promise<Record<string, any>> {
+  try {
+    const store = getReportsStore();
+    const rawData: any = await store.get('all_v2');
+    if (!rawData) return {};
+    if (typeof rawData === 'string') {
+      try { return JSON.parse(rawData); } catch(e) { return {}; }
+    }
+    return rawData;
+  } catch (e) {
+    console.error('Failed to get reports from blob:', e);
+    return {};
+  }
+}
+
 async function saveReportToBlob(id: string, report: any) {
   try {
-    const safeId = id.replace(/[^a-z0-9_\-]/gi, '_');
-    await getReportsStore().set(safeId, JSON.stringify(report));
+    const reports = await getReportsData();
+    reports[id] = report;
+    await getReportsStore().set('all_v2', JSON.stringify(reports));
+    console.log(`💾 [Analyze] Report for ${id} saved to master Blob`);
   } catch (e) {
     console.error('Failed to save report to blob:', e);
   }
 }
 
 async function getAllReportsFromBlob() {
-  const cache: Record<string, any> = {};
+  return await getReportsData();
+}
+
+async function getSummariesData(): Promise<Record<string, any>> {
   try {
-    const store = getReportsStore();
-    const keys = await store.list();
-    await Promise.all(keys.blobs.map(async (blob) => {
-      try {
-        let report: any = await store.get(blob.key);
-        if (typeof report === 'string') {
-          try { report = JSON.parse(report); } catch(e) {}
-        }
-        if (report && typeof report === 'object' && report.conversationId) {
-          cache[report.conversationId] = report;
-        }
-      } catch {}
-    }));
+    const store = getSummariesStore();
+    const rawData: any = await store.get('all_v2');
+    if (!rawData) return {};
+    if (typeof rawData === 'string') {
+      try { return JSON.parse(rawData); } catch(e) { return {}; }
+    }
+    return rawData;
   } catch (e) {
-    console.error('Failed to list reports from blob:', e);
+    console.error('Failed to get summaries from blob:', e);
+    return {};
   }
-  return cache;
 }
 
 async function saveClassSummaryToBlob(agentId: string, summary: string) {
   try {
-    const safeId = agentId.replace(/[^a-z0-9_\-]/gi, '_');
-    await getSummariesStore().set(safeId, JSON.stringify({ agentId, summary, time: Date.now() }));
+    const summaries = await getSummariesData();
+    summaries[agentId] = summary;
+    await getSummariesStore().set('all_v2', JSON.stringify(summaries));
+    console.log(`💾 [Analyze] Class summary for ${agentId} saved to master Blob`);
   } catch (e) {
     console.error('Failed to save class summary to blob:', e);
   }
 }
 
 async function getAllClassSummariesFromBlob() {
-  const cache: Record<string, string> = {};
-  try {
-    const store = getSummariesStore();
-    const keys = await store.list();
-    await Promise.all(keys.blobs.map(async (blob) => {
-      try {
-        let data: any = await store.get(blob.key);
-        if (typeof data === 'string') {
-          try { data = JSON.parse(data); } catch(e) {}
-        }
-        if (data && typeof data === 'object' && data.agentId) {
-          cache[data.agentId] = data.summary;
-        }
-      } catch {}
-    }));
-  } catch (e) {
-    console.error('Failed to list summaries from blob:', e);
-  }
-  return cache;
+  return await getSummariesData();
 }
+
 
 
 
